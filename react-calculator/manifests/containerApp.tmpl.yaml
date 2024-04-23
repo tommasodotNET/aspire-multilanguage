@@ -9,7 +9,7 @@ properties:
   configuration:
     activeRevisionsMode: single
     ingress:
-      external: false
+      external: true
       targetPort: {{ targetPortOrDefault 3000 }}
       transport: http
       allowInsecure: true
