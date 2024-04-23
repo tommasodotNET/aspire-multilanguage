@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "9kxZgsRqAKrnSdiGfeB5KB6teP7O5DnnrnjzYwtd5ls=",
+  "Source": "dotnet-subtractor",
+  "BasePath": "_content/dotnet-subtractor",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
