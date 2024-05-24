@@ -2,6 +2,8 @@ using Aspire.Hosting.Dapr;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+var insights = builder.AddAzureApplicationInsights("appin-distributed-calculator");
+
 // Configure Adder in Go
 var add = builder.AddContainer("addapp", "acr3stty56cqa3yc.azurecr.io/addapp")
     .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
@@ -40,6 +42,7 @@ builder.AddNpmApp(name: "calculator-front-end", workingDirectory: "../../react-c
     .WithReference(divideEnpoint)
     .WithReference(subtract)
     .WithReference(stateStore)
+    .WithReference(insights)
     .WithHttpEndpoint(targetPort: 3000, env: "PORT")
     .PublishAsDockerFile();
 
