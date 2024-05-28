@@ -49,6 +49,10 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' 
   name: 'cae-${resourceToken}'
   location: location
   properties: {
+    workloadProfiles: [{
+      workloadProfileType: 'Consumption'
+      name: 'consumption'
+    }]
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
@@ -113,129 +117,6 @@ resource daprStore 'Microsoft.App/containerApps@2023-05-02-preview' = {
     }
   }
   tags: union(tags, {'aspire-resource-name': 'daprStore'})
-}
-
-resource addapp 'Microsoft.App/containerApps@2023-05-02-preview' = {
-  name: 'addapp'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
-    }
-  }
-  properties: {
-    environmentId: containerAppEnvironment.id
-    configuration: {
-      activeRevisionsMode: 'Single'
-      ingress: {
-        external: false
-        targetPort: 6000
-        transport: 'http'
-        allowInsecure: true
-      }
-      registries: [
-        {
-          server: '${containerRegistry.name}.azurecr.io'
-          identity: managedIdentity.id
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          image: '${containerRegistry.name}.azurecr.io/addapp:latest'
-          name: 'addapp'
-        }
-      ]
-      scale: {
-        minReplicas: 1
-      }
-    }
-  }
-  tags: union(tags, {'aspire-resource-name': 'addapp'})
-}
-
-resource divideapp 'Microsoft.App/containerApps@2023-05-02-preview' = {
-  name: 'divideapp'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
-    }
-  }
-  properties: {
-    environmentId: containerAppEnvironment.id
-    configuration: {
-      activeRevisionsMode: 'Single'
-      ingress: {
-        external: false
-        targetPort: 4000
-        transport: 'http'
-        allowInsecure: true
-      }
-      registries: [
-        {
-          server: '${containerRegistry.name}.azurecr.io'
-          identity: managedIdentity.id
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          image: '${containerRegistry.name}.azurecr.io/divideapp:latest'
-          name: 'divideapp'
-        }
-      ]
-      scale: {
-        minReplicas: 1
-      }
-    }
-  }
-  tags: union(tags, {'aspire-resource-name': 'divideapp'})
-}
-
-resource multiplyapp 'Microsoft.App/containerApps@2023-05-02-preview' = {
-  name: 'multiplyapp'
-  location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${managedIdentity.id}': {}
-    }
-  }
-  properties: {
-    environmentId: containerAppEnvironment.id
-    configuration: {
-      activeRevisionsMode: 'Single'
-      ingress: {
-        external: false
-        targetPort: 5001
-        transport: 'http'
-        allowInsecure: true
-      }
-      registries: [
-        {
-          server: '${containerRegistry.name}.azurecr.io'
-          identity: managedIdentity.id
-        }
-      ]
-    }
-    template: {
-      containers: [
-        {
-          image: '${containerRegistry.name}.azurecr.io/multiplyapp:latest'
-          name: 'multiplyapp'
-        }
-      ]
-      scale: {
-        minReplicas: 1
-      }
-    }
-  }
-  tags: union(tags, {'aspire-resource-name': 'multiplyapp'})
 }
 
 output MANAGED_IDENTITY_CLIENT_ID string = managedIdentity.properties.clientId
