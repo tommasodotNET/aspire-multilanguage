@@ -12,7 +12,7 @@ properties:
       external: true
       targetPort: {{ targetPortOrDefault 3000 }}
       transport: http
-      allowInsecure: true
+      allowInsecure: false
     registries:
       - server: {{ .Env.AZURE_CONTAINER_REGISTRY_ENDPOINT }}
         identity: {{ .Env.AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}
@@ -32,12 +32,6 @@ properties:
             value: development
           - name: PORT
             value: "3000"
-          - name: services__addapp__http__0
-            value: http://addapp.internal.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
-          - name: services__divideapp__http__0
-            value: http://divideapp.internal.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
-          - name: services__multiplyapp__http__0
-            value: http://multiplyapp.internal.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__subtractapp__http__0
             value: http://subtractapp.internal.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__subtractapp__https__0

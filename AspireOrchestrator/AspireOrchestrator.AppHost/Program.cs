@@ -54,6 +54,7 @@ builder.AddNpmApp(name: "calculator-front-end", workingDirectory: "../../react-c
     .WithReference(stateStore)
     .WithReference(insights)
     .WithHttpEndpoint(targetPort: 3000, env: "PORT")
+    .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
 builder.Build().Run();

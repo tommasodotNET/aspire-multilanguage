@@ -8,11 +8,6 @@ properties:
   environmentId: {{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_ID }}
   configuration:
     activeRevisionsMode: single
-    ingress:
-      external: false
-      targetPort: {{ targetPortOrDefault 6000 }}
-      transport: http
-      allowInsecure: true
     registries:
       - server: {{ .Env.AZURE_CONTAINER_REGISTRY_ENDPOINT }}
         identity: {{ .Env.AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}
@@ -23,8 +18,6 @@ properties:
         env:
           - name: AZURE_CLIENT_ID
             value: {{ .Env.MANAGED_IDENTITY_CLIENT_ID }}
-          - name: APP_PORT
-            value: "6000"
     scale:
       minReplicas: 1
 tags:
