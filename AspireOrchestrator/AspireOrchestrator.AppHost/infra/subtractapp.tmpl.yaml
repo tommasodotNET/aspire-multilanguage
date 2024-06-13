@@ -34,6 +34,8 @@ properties:
             value: "true"
           - name: OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY
             value: in_memory
+          - name: OTEL_SERVICE_NAME
+            value: subtractapp
           - name: APPLICATIONINSIGHTS_CONNECTION_STRING
             secretRef: applicationinsights-connection-string
     scale:

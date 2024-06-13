@@ -30,6 +30,8 @@ properties:
             value: "3500"
           - name: NODE_ENV
             value: development
+          - name: OTEL_SERVICE_NAME
+            value: calculator-front-end
           - name: PORT
             value: "3000"
           - name: services__subtractapp__http__0
