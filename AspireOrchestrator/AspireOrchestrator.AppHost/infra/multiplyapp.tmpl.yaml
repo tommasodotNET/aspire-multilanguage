@@ -12,6 +12,11 @@ properties:
     runtime:
       dotnet:
         autoConfigureDataProtection: true
+    ingress:
+      external: false
+      targetPort: {{ targetPortOrDefault 5001 }}
+      transport: http
+      allowInsecure: true
     registries:
       - server: {{ .Env.AZURE_CONTAINER_REGISTRY_ENDPOINT }}
         identity: {{ .Env.AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}
