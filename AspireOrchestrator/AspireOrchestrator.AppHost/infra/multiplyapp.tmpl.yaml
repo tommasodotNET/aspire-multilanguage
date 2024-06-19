@@ -27,6 +27,10 @@ properties:
         env:
           - name: AZURE_CLIENT_ID
             value: {{ .Env.MANAGED_IDENTITY_CLIENT_ID }}
+          - name: APP_PORT
+            value: "5001"
+          - name: OTEL_SERVICE_NAME
+            value: multiplyapp
     scale:
       minReplicas: 1
 tags:
