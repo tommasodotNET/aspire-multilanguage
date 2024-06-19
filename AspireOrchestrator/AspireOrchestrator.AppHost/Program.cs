@@ -8,24 +8,18 @@ var insights = builder.ExecutionContext.IsPublishMode
     : builder.AddConnectionString("appin-distributed-calculator", "APPLICATIONINSIGHTS_CONNECTION_STRING");
 
 // Configure Adder in Go
-var add = builder.ExecutionContext.IsPublishMode
+var add = (builder.ExecutionContext.IsPublishMode
     ? builder.AddContainer("addapp", "acrt6xtihl2b3uxe.azurecr.io/addapp")
-        .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
-        .WithEnvironment("OTEL_SERVICE_NAME", "addapp")
-        .PublishAsContainer()
-    : builder.AddContainer("addapp", "addapp")
+    : builder.AddContainer("addapp", "addapp"))
         .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
         .WithEnvironment("OTEL_SERVICE_NAME", "addapp")
         .PublishAsContainer();
 var addEnpoint = add.GetEndpoint("http");
 
 // Configure Multiplier in Python
-var multiply = builder.ExecutionContext.IsPublishMode
+var multiply = (builder.ExecutionContext.IsPublishMode
     ? builder.AddContainer("multiplyapp", "acrt6xtihl2b3uxe.azurecr.io/multiplyapp")
-        .WithHttpEndpoint(targetPort: 5001, env: "APP_PORT", name: "http")
-        .WithEnvironment("OTEL_SERVICE_NAME", "multiplyapp")
-        .PublishAsContainer()
-    : builder.AddContainer("multiplyapp", "multiplyapp")
+    : builder.AddContainer("multiplyapp", "multiplyapp"))
         .WithHttpEndpoint(targetPort: 5001, env: "APP_PORT", name: "http")
         .WithEnvironment("OTEL_SERVICE_NAME", "multiplyapp")
         .PublishAsContainer();
