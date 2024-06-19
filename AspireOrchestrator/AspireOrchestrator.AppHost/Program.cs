@@ -11,9 +11,8 @@ var insights = builder.ExecutionContext.IsPublishMode
 var add = builder.ExecutionContext.IsPublishMode
     ? builder.AddContainer("addapp", "acrt6xtihl2b3uxe.azurecr.io/addapp")
     : builder.AddContainer("addapp", "addapp")
-    // .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
+    .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
     .WithEnvironment("OTEL_SERVICE_NAME", "addapp")
-    .WithEndpoint(targetPort: 6000, scheme: "http", env: "APP_PORT", isExternal: false, name: "http")
     .PublishAsContainer();
 var addEnpoint = add.GetEndpoint("http");
 
