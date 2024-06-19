@@ -34,6 +34,8 @@ properties:
             value: calculator-front-end
           - name: PORT
             value: "3000"
+          - name: services__divideapp__http__0
+            value: http://divideapp.internal.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__subtractapp__http__0
             value: http://subtractapp.internal.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__subtractapp__https__0

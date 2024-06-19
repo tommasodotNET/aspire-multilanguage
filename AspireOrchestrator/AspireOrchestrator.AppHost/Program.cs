@@ -11,8 +11,9 @@ var insights = builder.ExecutionContext.IsPublishMode
 var add = builder.ExecutionContext.IsPublishMode
     ? builder.AddContainer("addapp", "acrt6xtihl2b3uxe.azurecr.io/addapp")
     : builder.AddContainer("addapp", "addapp")
-    .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
+    // .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
     .WithEnvironment("OTEL_SERVICE_NAME", "addapp")
+    .WithEndpoint(targetPort: 6000, scheme: "http", env: "APP_PORT", isExternal: false, name: "http")
     .PublishAsContainer();
 var addEnpoint = add.GetEndpoint("http");
 
@@ -26,13 +27,10 @@ var multiply = builder.ExecutionContext.IsPublishMode
 var multiplyEnpoint = multiply.GetEndpoint("http");
 
 // Configure Divider in NodeJS
-var divide = builder.ExecutionContext.IsPublishMode
-    ? builder.AddContainer("divideapp", "acrt6xtihl2b3uxe.azurecr.io/divideapp")
-    : builder.AddContainer("divideapp", "divideapp")
+var divide = builder.AddNodeApp(name: "divideapp", scriptPath: "app.js", workingDirectory: "../../node-divider")
     .WithHttpEndpoint(targetPort: 4000, env: "APP_PORT", name: "http")
     .WithEnvironment("OTEL_SERVICE_NAME", "divideapp")
-    .PublishAsContainer();
-var divideEnpoint = divide.GetEndpoint("http");
+    .PublishAsDockerFile();
 
 // Configure Subtractor in .NET
 var subtract = builder.AddProject<Projects.dotnet_subtractor>("subtractapp")
@@ -53,7 +51,7 @@ builder.AddNpmApp(name: "calculator-front-end", workingDirectory: "../../react-c
     .WithEnvironment("DAPR_HTTP_PORT", "3500")
     .WithReference(addEnpoint)
     .WithReference(multiplyEnpoint)
-    .WithReference(divideEnpoint)
+    .WithReference(divide)
     .WithReference(subtract)
     .WithReference(stateStore)
     .WithReference(insights)
