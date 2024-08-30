@@ -12,18 +12,16 @@ var add = (builder.ExecutionContext.IsPublishMode
     ? builder.AddContainer("addapp", "acrt6xtihl2b3uxe.azurecr.io/addapp")
     : builder.AddContainer("addapp", "addapp"))
         .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
+        .WithOtlpExporter()
         .WithEnvironment("OTEL_SERVICE_NAME", "addapp")
         .PublishAsContainer();
 var addEnpoint = add.GetEndpoint("http");
 
 // Configure Multiplier in Python
-var multiply = (builder.ExecutionContext.IsPublishMode
-    ? builder.AddContainer("multiplyapp", "acrt6xtihl2b3uxe.azurecr.io/multiplyapp")
-    : builder.AddContainer("multiplyapp", "multiplyapp"))
-        .WithHttpEndpoint(targetPort: 5001, env: "APP_PORT", name: "http")
-        .WithEnvironment("OTEL_SERVICE_NAME", "multiplyapp")
-        .PublishAsContainer();
-var multiplyEnpoint = multiply.GetEndpoint("http");
+var multiply = builder.AddPythonProject("multiplyapp", "../../python-multiplier", "app.py")
+    .WithHttpEndpoint(targetPort: 5001, env: "APP_PORT", name: "http")
+    .WithEnvironment("OTEL_SERVICE_NAME", "multiplyapp")
+    .PublishAsDockerFile();
 
 // Configure Divider in NodeJS
 var divide = builder.AddNodeApp(name: "divideapp", scriptPath: "app.js", workingDirectory: "../../node-divider")
@@ -49,7 +47,7 @@ builder.AddNpmApp(name: "calculator-front-end", workingDirectory: "../../react-c
     })
     .WithEnvironment("DAPR_HTTP_PORT", "3500")
     .WithReference(addEnpoint)
-    .WithReference(multiplyEnpoint)
+    .WithReference(multiply)
     .WithReference(divide)
     .WithReference(subtract)
     .WithReference(stateStore)

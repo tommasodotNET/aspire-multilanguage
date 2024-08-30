@@ -14,13 +14,29 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+)
+
+var (
+	serviceName      = os.Getenv("SERVICE_NAME")
+	collectorURL     = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	collectorHeaders = os.Getenv("OTEL_EXPORTER_OTLP_HEADERS")
+	insecure         = "true"
 )
 
 type Operands struct {
@@ -28,22 +44,75 @@ type Operands struct {
 	OperandTwo float32 `json:"operandTwo,string"`
 }
 
-func add(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+func add(c *gin.Context) {
+	c.Header("Content-Type", "application/json")
+	c.Header("Access-Control-Allow-Origin", "*")
 	var operands Operands
-	json.NewDecoder(r.Body).Decode(&operands)
+	json.NewDecoder(c.Request.Body).Decode(&operands)
 	fmt.Printf("Adding %f to %f\n", operands.OperandOne, operands.OperandTwo)
-	json.NewEncoder(w).Encode(operands.OperandOne + operands.OperandTwo)
+	c.JSON(200, operands.OperandOne+operands.OperandTwo)
 }
 
 func main() {
-	appPort := "6000"
-	if value, ok := os.LookupEnv("APP_PORT"); ok {
-		appPort = value
-	}
-	router := mux.NewRouter()
+	shutdown := initTracer()
+	defer shutdown(context.Background())
 
-	router.HandleFunc("/add", add).Methods("POST", "OPTIONS")
-	log.Fatal(http.ListenAndServe(":"+appPort, router))
+	appPort := os.Getenv("APP_PORT")
+	if appPort == "" {
+		appPort = "6000"
+	}
+
+	r := gin.Default()
+	r.Use(otelgin.Middleware(serviceName))
+	r.POST("/add", add)
+	r.Run(":" + appPort)
+
+}
+
+func initTracer() func(context.Context) error {
+	// secureOption := otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, ""))
+	// if len(insecure) > 0 {
+	// 	secureOption = otlptracegrpc.WithInsecure()
+	// }
+	secureOption := otlptracehttp.WithInsecure()
+
+	parsedURL, err := url.Parse(collectorURL)
+	fmt.Println("parsedURL: ", parsedURL)
+	if err != nil {
+		log.Fatalf("Failed to parse collector URL: %v", err)
+	}
+	endpoint := parsedURL.Host // Use the entire URL for HTTP/HTTPS
+	headers := strings.Split(collectorHeaders, "=")
+
+	exporter, err := otlptrace.New(
+		context.Background(),
+		otlptracehttp.NewClient(
+			secureOption,
+			otlptracehttp.WithEndpoint(endpoint),
+			otlptracehttp.WithHeaders(map[string]string{headers[0]: headers[1]}),
+		),
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	resources, err := resource.New(
+		context.Background(),
+		resource.WithAttributes(
+			attribute.String("service.name", serviceName),
+			attribute.String("library.language", "go"),
+		),
+	)
+	if err != nil {
+		log.Printf("Could not set resources: ", err)
+	}
+
+	otel.SetTracerProvider(
+		sdktrace.NewTracerProvider(
+			sdktrace.WithSampler(sdktrace.AlwaysSample()),
+			sdktrace.WithBatcher(exporter),
+			sdktrace.WithResource(resources),
+		),
+	)
+	return exporter.Shutdown
 }
