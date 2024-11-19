@@ -9,7 +9,7 @@ var insights = builder.ExecutionContext.IsPublishMode
 
 // Configure Adder in Go
 var add = builder.AddGolangApp("addapp", "../../go-adder")
-    .WithHttpEndpoint(env: "PORT")
+    .WithHttpEndpoint(env: "APP_PORT")
     .PublishAsDockerFile();
 
 #pragma warning disable ASPIREHOSTINGPYTHON001
