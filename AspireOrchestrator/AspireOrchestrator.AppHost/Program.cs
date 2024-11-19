@@ -34,13 +34,14 @@ var subtract = builder.AddProject<Projects.dotnet_subtractor>("subtractapp")
 var stateStore = builder.AddDaprStateStore("statestore");
 
 // Configure Frontend in React
-builder.AddNpmApp(name: "calculator-front-end", workingDirectory: "../../react-calculator")
+builder.AddYarnApp(name: "calculator-front-end", workingDirectory: "../../react-calculator")
     .WithDaprSidecar(new DaprSidecarOptions
     {
         AppPort = 3000,
         AppProtocol = "http",
         DaprHttpPort = 3500
     })
+    .WithYarnPackageInstallation()
     .WithEnvironment("DAPR_HTTP_PORT", "3500")
     .WithReference(add)
     .WithReference(multiply)
