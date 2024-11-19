@@ -16,19 +16,16 @@ var add = builder.AddGolangApp("addapp", "../../go-adder")
 // Configure Multiplier in Python
 var multiply = builder.AddPythonApp("multiplyapp", "../../python-multiplier", "app.py")
     .WithHttpEndpoint(targetPort: 5001, env: "APP_PORT", name: "http")
-    // .WithEnvironment("OTEL_SERVICE_NAME", "multiplyapp")
     .PublishAsDockerFile();
 
 // Configure Divider in NodeJS
 var divide = builder.AddNodeApp(name: "divideapp", scriptPath: "app.js", workingDirectory: "../../node-divider")
     .WithHttpEndpoint(targetPort: 4000, env: "APP_PORT", name: "http")
-    // .WithEnvironment("OTEL_SERVICE_NAME", "divideapp")
     .PublishAsDockerFile();
 
 // Configure Subtractor in .NET
 var subtract = builder.AddProject<Projects.dotnet_subtractor>("subtractapp")
     .WithReference(insights);
-    // .WithEnvironment("OTEL_SERVICE_NAME", "subtractapp");
 
 // Configure Dapr State Store
 var stateStore = builder.AddDaprStateStore("statestore");
@@ -51,7 +48,6 @@ builder.AddYarnApp(name: "calculator-front-end", workingDirectory: "../../react-
     .WithReference(insights)
     .WithHttpEndpoint(targetPort: 3000, env: "PORT")
     .WithExternalHttpEndpoints()
-    // .WithEnvironment("OTEL_SERVICE_NAME", "calculator-front-end")
     .PublishAsDockerFile();
 
 builder.Build().Run();
