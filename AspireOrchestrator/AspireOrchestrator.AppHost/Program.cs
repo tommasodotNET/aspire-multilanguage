@@ -20,6 +20,7 @@ var multiply = builder.AddPythonApp("multiplyapp", "../../python-multiplier", "a
 
 // Configure Divider in NodeJS
 var divide = builder.AddNodeApp(name: "divideapp", scriptPath: "app.js", workingDirectory: "../../node-divider")
+    .WithNpmPackageInstallation()
     .WithHttpEndpoint(env: "APP_PORT")
     .PublishAsDockerFile();
 
