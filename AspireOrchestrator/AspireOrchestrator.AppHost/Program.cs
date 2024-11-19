@@ -12,15 +12,15 @@ var add = builder.AddGolangApp("addapp", "../../go-adder")
     .WithHttpEndpoint(env: "APP_PORT")
     .PublishAsDockerFile();
 
-#pragma warning disable ASPIREHOSTINGPYTHON001
 // Configure Multiplier in Python
+#pragma warning disable ASPIREHOSTINGPYTHON001
 var multiply = builder.AddPythonApp("multiplyapp", "../../python-multiplier", "app.py")
-    .WithHttpEndpoint(targetPort: 5001, env: "APP_PORT", name: "http")
+    .WithHttpEndpoint(env: "APP_PORT")
     .PublishAsDockerFile();
 
 // Configure Divider in NodeJS
 var divide = builder.AddNodeApp(name: "divideapp", scriptPath: "app.js", workingDirectory: "../../node-divider")
-    .WithHttpEndpoint(targetPort: 4000, env: "APP_PORT", name: "http")
+    .WithHttpEndpoint(env: "APP_PORT")
     .PublishAsDockerFile();
 
 // Configure Subtractor in .NET
@@ -31,7 +31,7 @@ var subtract = builder.AddProject<Projects.dotnet_subtractor>("subtractapp")
 var stateStore = builder.AddDaprStateStore("statestore");
 
 // Configure Frontend in React
-builder.AddYarnApp(name: "calculator-front-end", workingDirectory: "../../react-calculator")
+builder.AddViteApp(name: "calculator-front-end", workingDirectory: "../../react-calculator", packageManager: "yarn")
     .WithDaprSidecar(new DaprSidecarOptions
     {
         AppPort = 3000,
@@ -46,8 +46,6 @@ builder.AddYarnApp(name: "calculator-front-end", workingDirectory: "../../react-
     .WithReference(subtract)
     .WithReference(stateStore)
     .WithReference(insights)
-    .WithHttpEndpoint(targetPort: 3000, env: "PORT")
-    .WithExternalHttpEndpoints()
     .PublishAsDockerFile();
 
 builder.Build().Run();
