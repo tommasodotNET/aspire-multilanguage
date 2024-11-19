@@ -8,17 +8,13 @@ var insights = builder.ExecutionContext.IsPublishMode
     : builder.AddConnectionString("appin-distributed-calculator", "APPLICATIONINSIGHTS_CONNECTION_STRING");
 
 // Configure Adder in Go
-var add = (builder.ExecutionContext.IsPublishMode
-    ? builder.AddContainer("addapp", "acrt6xtihl2b3uxe.azurecr.io/addapp")
-    : builder.AddContainer("addapp", "addapp"))
-        .WithHttpEndpoint(targetPort: 6000, env: "APP_PORT", name: "http")
-        .WithOtlpExporter()
-        .WithEnvironment("OTEL_SERVICE_NAME", "addapp")
-        .PublishAsContainer();
-var addEnpoint = add.GetEndpoint("http");
+var add = builder.AddGolangApp("addapp", "../../go-adder")
+    .WithHttpEndpoint(env: "APP_PORT")
+    .PublishAsDockerFile();
 
+#pragma warning disable ASPIREHOSTINGPYTHON001
 // Configure Multiplier in Python
-var multiply = builder.AddPythonProject("multiplyapp", "../../python-multiplier", "app.py")
+var multiply = builder.AddPythonApp("multiplyapp", "../../python-multiplier", "app.py")
     .WithHttpEndpoint(targetPort: 5001, env: "APP_PORT", name: "http")
     .WithEnvironment("OTEL_SERVICE_NAME", "multiplyapp")
     .PublishAsDockerFile();
@@ -46,7 +42,7 @@ builder.AddNpmApp(name: "calculator-front-end", workingDirectory: "../../react-c
         DaprHttpPort = 3500
     })
     .WithEnvironment("DAPR_HTTP_PORT", "3500")
-    .WithReference(addEnpoint)
+    .WithReference(add)
     .WithReference(multiply)
     .WithReference(divide)
     .WithReference(subtract)
