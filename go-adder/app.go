@@ -18,25 +18,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/url"
+	"main/otelx"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/metric"
 )
 
 var (
-	serviceName      = os.Getenv("SERVICE_NAME")
-	collectorURL     = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	collectorHeaders = os.Getenv("OTEL_EXPORTER_OTLP_HEADERS")
-	insecure         = "true"
+	name                  = os.Getenv("OTEL_SERVICE_NAME")
+	isInsecure            bool
+	otelTarget            string
+	headers               map[string]string
+	meter                 metric.Meter
+	metricRequestTotal    metric.Int64Counter
+	responseTimeHistogram metric.Int64Histogram
 )
 
 type Operands struct {
@@ -53,66 +53,85 @@ func add(c *gin.Context) {
 	c.JSON(200, operands.OperandOne+operands.OperandTwo)
 }
 
-func main() {
-	shutdown := initTracer()
-	defer shutdown(context.Background())
-
-	appPort := os.Getenv("APP_PORT")
-	if appPort == "" {
-		appPort = "6000"
-	}
+func setupRouter() *gin.Engine {
+	// Disable Console Color
+	// gin.DisableConsoleColor()
 
 	r := gin.Default()
-	r.Use(otelgin.Middleware(serviceName))
-	r.POST("/add", add)
-	r.Run(":" + appPort)
+	r.Use(otelgin.Middleware(name))
+	r.Use(monitorInterceptor())
 
+	r.POST("/add", add)
+
+	return r
 }
 
-func initTracer() func(context.Context) error {
-	// secureOption := otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, ""))
-	// if len(insecure) > 0 {
-	// 	secureOption = otlptracegrpc.WithInsecure()
-	// }
-	secureOption := otlptracehttp.WithInsecure()
-
-	parsedURL, err := url.Parse(collectorURL)
-	fmt.Println("parsedURL: ", parsedURL)
-	if err != nil {
-		log.Fatalf("Failed to parse collector URL: %v", err)
+func main() {
+	otelEndpoint := strings.Split(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"), "https://")
+	if len(otelEndpoint) > 1 {
+		isInsecure = false
+		otelTarget = otelEndpoint[1]
+	} else {
+		isInsecure = true
+		otelTarget = strings.Split(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"), "http://")[1]
 	}
-	endpoint := parsedURL.Host // Use the entire URL for HTTP/HTTPS
-	headers := strings.Split(collectorHeaders, "=")
+	otelHeaders := strings.Split(os.Getenv("OTEL_EXPORTER_OTLP_HEADERS"), "=")
+	if len(otelHeaders) > 1 {
+		headers = map[string]string{otelHeaders[0]: otelHeaders[1]}
+	}
+	// Initialize OpenTelemetry
+	err := otelx.SetupOTelSDK(context.Background(), otelTarget, isInsecure, headers, name)
+	if err != nil {
+		log.Printf("Failed to initialize OpenTelemetry: %v", err)
+		return
+	}
+	defer func() {
+		err = otelx.Shutdown(context.Background())
+		if err != nil {
+			log.Printf("Failed to shutdown OpenTelemetry: %v", err)
+		}
+	}()
 
-	exporter, err := otlptrace.New(
-		context.Background(),
-		otlptracehttp.NewClient(
-			secureOption,
-			otlptracehttp.WithEndpoint(endpoint),
-			otlptracehttp.WithHeaders(map[string]string{headers[0]: headers[1]}),
-		),
+	// Create a tracer and a meter
+	meter = otel.Meter(name)
+	initGinMetrics()
+
+	r := setupRouter()
+
+	// Listen and Server in 0.0.0.0:8080
+	r.Run(":" + os.Getenv("PORT"))
+}
+
+func initGinMetrics() {
+
+	metricRequestTotal, _ = meter.Int64Counter("gin_request_total",
+		metric.WithDescription("all the server received request num."),
 	)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-	resources, err := resource.New(
-		context.Background(),
-		resource.WithAttributes(
-			attribute.String("service.name", serviceName),
-			attribute.String("library.language", "go"),
-		),
+	// Create a histogram to measure response time
+	responseTimeHistogram, _ = meter.Int64Histogram("gin_response_time",
+		metric.WithDescription("The distribution of response times."),
 	)
-	if err != nil {
-		log.Printf("Could not set resources: ", err)
-	}
+}
 
-	otel.SetTracerProvider(
-		sdktrace.NewTracerProvider(
-			sdktrace.WithSampler(sdktrace.AlwaysSample()),
-			sdktrace.WithBatcher(exporter),
-			sdktrace.WithResource(resources),
-		),
-	)
-	return exporter.Shutdown
+// monitorInterceptor as gin monitor middleware.
+func monitorInterceptor() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		startTime := time.Now()
+
+		// execute normal process.
+		c.Next()
+
+		// after request
+		ginMetricHandle(c.Request.Context(), startTime)
+	}
+}
+
+func ginMetricHandle(c context.Context, start time.Time) {
+	// set request total
+	metricRequestTotal.Add(c, 1)
+
+	// Record the response time
+	duration := time.Since(start)
+	responseTimeHistogram.Record(c, duration.Milliseconds())
 }
